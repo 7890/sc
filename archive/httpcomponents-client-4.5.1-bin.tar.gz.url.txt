@@ -1,0 +1,5 @@
+http://mirror.switch.ch/mirror/apache/dist//httpcomponents/httpclient/binary/httpcomponents-client-4.5.1-bin.tar.gz
+aa385fe2933be56d1441f46e24df6d54
+Tue Oct 27 22:44:48 CET 2015
+http://mirror.switch.ch/mirror/apache/dist//httpcomponents/httpclient/source/httpcomponents-client-4.5.1-src.tar.gz
+274eabf741ea50184fd0a86f93ec69d7

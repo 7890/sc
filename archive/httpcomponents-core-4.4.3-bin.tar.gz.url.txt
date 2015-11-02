@@ -1,0 +1,5 @@
+http://mirror.switch.ch/mirror/apache/dist//httpcomponents/httpcore/binary/httpcomponents-core-4.4.3-bin.tar.gz
+ed012cfc19a51d93a4582f0df598c595
+Tue Oct 27 22:44:48 CET 2015
+http://mirror.switch.ch/mirror/apache/dist//httpcomponents/httpcore/source/httpcomponents-core-4.4.3-src.tar.gz
+f1f7f16972f37a45e817df459df06a1c
