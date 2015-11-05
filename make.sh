@@ -16,15 +16,9 @@ ARCHIVE_="$DIR"/archive
 mkdir -p "$BUILD_"
 
 #linux / osx different mktemp call
-TMPFILE=`mktemp || mktemp -t /tmp`
+TMPFILE=`mktemp 2>/dev/null || mktemp -t /tmp`
 
-echo "tmpfile: $TMPFILE"
-
-#========================================================================
-globStar()
-{
-	find "$1" -name "$2" | while read line; do printf '%q' "$line"; echo -n " "; done
-}
+JAVAC="javac -source 1.6 -target 1.6 -nowarn"
 
 #========================================================================
 checkAvail()
@@ -41,14 +35,13 @@ checkAvail()
 #========================================================================
 prepare()
 {
-
+echo "= preparing build"
 cp "$ARCHIVE_"/httpcomponents-client-4.5.1-bin.tar.gz "$BUILD_"
 cp "$ARCHIVE_"/httpcomponents-core-4.4.3-bin.tar.gz "$BUILD_"
 cp "$ARCHIVE_"/JSON-java-e7f4eb5f67048642e24634db8ec8c7e6f29c0c22.tar.gz "$BUILD_"
 cp "$ARCHIVE_"/java-api-wrapper-375f17e661e640a6dde57188a2d56234f8785c7e.tar.gz "$BUILD_"
 
 cd "$BUILD_"
-echo "===extracting"
 tar xfz httpcomponents-client-4.5.1-bin.tar.gz
 tar xfz httpcomponents-core-4.4.3-bin.tar.gz
 tar xfz JSON-java-e7f4eb5f67048642e24634db8ec8c7e6f29c0c22.tar.gz
@@ -66,66 +59,59 @@ rm -f httpcomponents-core-4.4.3-bin.tar.gz
 rm -f JSON-java-e7f4eb5f67048642e24634db8ec8c7e6f29c0c22.tar.gz
 rm -f java-api-wrapper-375f17e661e640a6dde57188a2d56234f8785c7e.tar.gz
 
-echo "===build JSON-java"
+echo "= building JSON-java"
 #git clone https://github.com/douglascrockford/JSON-java
 cd JSON-java-e7f4eb5f67048642e24634db8ec8c7e6f29c0c22
-#git pull
-#git reset --hard HEAD
 
 chmod 644 *.java
 
 mkdir -p src/org/json
 cp *.java src/org/json
+
+echo "= patching file src/org/json/JSONObject.java"
 cat JSONObject.java | sed 's/IllegalArgumentException | NullPointerException e/Exception e/g' \
 	> src/org/json/JSONObject.java
 
+echo "= patching file src/org/json/JSONArray.java"
 cat JSONArray.java | sed 's/IllegalArgumentException | NullPointerException e/Exception e/g' \
 	> src/org/json/JSONArray.java
 
 rm *.java
 
-echo "===compiling"
-echo javac -source 1.6 -target 1.6 -nowarn -classpath \"$BUILD_\" -sourcepath src/ -d \"$BUILD_\" src/org/json/*.java
-javac -source 1.6 -target 1.6 -nowarn -classpath "$BUILD_" -sourcepath src/ -d "$BUILD_" src/org/json/*.java
+echo "= compiling sources"
+$JAVAC -classpath "$BUILD_" -sourcepath src/ -d "$BUILD_" src/org/json/*.java
 
 cd "$BUILD_"
+echo "= creating jar org.json.jar"
 jar cf org.json.jar org/
 
 #git clone https://github.com/soundcloud/java-api-wrapper
-echo "===build java-api-wrapper"
+echo "= building java-api-wrapper"
 cd java-api-wrapper-375f17e661e640a6dde57188a2d56234f8785c7e
-#echo "===updating git"
-#git pull
-#git reset --hard HEAD
 
 ###
-echo "===applying patches"
 cp "$DIR"/diffs/Request.java.diff .
 
+echo -n "= "
 patch -p1 < Request.java.diff
 
-echo "===compiling"
-
-echo javac -source 1.6 -target 1.6 \
-	-cp \"$BUILD_\":\"$BUILD_\"/httpcore-4.4.3.jar:\"$BUILD_\"/httpclient-4.5.1.jar:\"$BUILD_\"/httpmime-4.5.1.jar:\"$BUILD_\"/commons-logging-1.2.jar:\"$BUILD_\"/org.json.jar \
+find src/main/java/ -name *.java > "$TMPFILE"
+find src/examples/java/ -name *.java >> "$TMPFILE"
+echo "= compiling sources"
+$JAVAC \
+	-cp "$BUILD_":"$BUILD_"/httpcore-4.4.3.jar:"$BUILD_"/httpclient-4.5.1.jar:"$BUILD_"/httpmime-4.5.1.jar:"$BUILD_"/commons-logging-1.2.jar:"$BUILD_"/org.json.jar \
 	-sourcepath src/main/java \
-	-d \"$BUILD_\" `globStar "$(pwd)/src/main/java/" *.java` > "$TMPFILE" \
-	&& cat "$TMPFILE" && sh "$TMPFILE"
-
-echo javac -source 1.6 -target 1.6 \
-	-cp \"$BUILD_\":\"$BUILD_\"/httpcore-4.4.3.jar:\"$BUILD_\"/httpclient-4.5.1.jar:\"$BUILD_\"/httpmime-4.5.1.jar:\"$BUILD_\"/commons-logging-1.2.jar:\"$BUILD_\"/org.json.jar \
-	-sourcepath src/examples/java \
-	-d \"$BUILD_\" `globStar "$(pwd)/src/examples/java/" *.java` > "$TMPFILE" \
-	&& cat "$TMPFILE" && sh "$TMPFILE"
+	-d "$BUILD_" @"$TMPFILE" 2>&1 | grep -v "^Note: "
 
 cd "$BUILD_"
+echo "= creating jar com.soundcloud.api.jar"
 jar cf com.soundcloud.api.jar com/
 #cp com.soundcloud.api.jar "$BUILD_"
 
 }
 #end prepare
 
-###
+echo "= checking tools availability"
 for tool in java javac jar sed
         do checkAvail "$tool"; done
 
@@ -133,20 +119,17 @@ prepare
 
 cd "$DIR"
 
-echo "===compiling"
-echo javac -source 1.6 -target 1.6 -cp \"$BUILD_\":\"$BUILD_\"/httpcore-4.4.3.jar:\"$BUILD_\"/httpclient-4.5.1.jar:\"$BUILD_\"/httpmime-4.5.1.jar:\"$BUILD_\"/commons-logging-1.2.jar:\"$BUILD_\"/org.json.jar:\"$BUILD_\"/com.soundcloud.api.jar \
-	-sourcepath src \
-	-d \"$BUILD_\" src/*.java
+#echo "= compiling application"
+#$JAVAC -cp "$BUILD_":"$BUILD_"/httpcore-4.4.3.jar:"$BUILD_"/httpclient-4.5.1.jar:"$BUILD_"/httpmime-4.5.1.jar:"$BUILD_"/org.json.jar:"$BUILD_"/commons-logging-1.2.jar:"$BUILD_"/com.soundcloud.api.jar \
+#	-sourcepath src \
+#	-d "$BUILD_" src/*.java
 
-javac -source 1.6 -target 1.6 -cp "$BUILD_":"$BUILD_"/httpcore-4.4.3.jar:"$BUILD_"/httpclient-4.5.1.jar:"$BUILD_"/httpmime-4.5.1.jar:"$BUILD_"/org.json.jar:"$BUILD_"/commons-logging-1.2.jar:"$BUILD_"/com.soundcloud.api.jar \
-	-sourcepath src \
-	-d "$BUILD_" src/*.java
+rm -f "$TMPFILE"
 
-###
-#rm -rf "$BUILD_"/com
-#rm -rf "$BUILD_"/org
+echo "= done"
+echo ""
 
-echo "======test manually"
+echo "example call:"
 
 #echo java -cp \"$BUILD_\":\"$BUILD_\"/httpcore-4.4.3.jar:\"$BUILD_\"/httpclient-4.5.1.jar:\"$BUILD_\"/httpmime-4.5.1.jar:\"$BUILD_\"/commons-logging-1.2.jar:\"$BUILD_\"/org.json.jar:\"$BUILD_\"/com.soundcloud.api.jar \
 #	Test
