@@ -1,0 +1,4 @@
+228a229
+>                         org.apache.http.util.EntityUtils.consumeQuietly(response.getEntity());
+312a314
+>                         org.apache.http.util.EntityUtils.consumeQuietly(response.getEntity());

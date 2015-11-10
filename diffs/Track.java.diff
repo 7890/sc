@@ -1,0 +1,11 @@
+250a251
+> 		String ret="error";
+252a254,257
+>                     ret=data.getFirstHeader("Location").getValue().replace("https://", "http://");
+>                     //needed to free connection (see http://stackoverflow.com/questions/16019612/org-apache-http-conn-connectionpooltimeoutexception-timeout-waiting-for-connect)
+>                     org.apache.http.util.EntityUtils.consumeQuietly(data.getEntity());
+> 
+256c261
+<                 return data.getFirstHeader("Location").getValue().replace("https://", "http://");
+---
+>                 return ret;

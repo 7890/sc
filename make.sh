@@ -150,6 +150,15 @@ echo "= building soundcloud-java-library"
 #https://github.com/nok/soundcloud-java-library
 cd soundcloud-java-library-ce05aac18ab5fb2a420e32a81986b67da50885a5
 
+###
+cp "$DIR"/diffs/Track.java.diff .
+cp "$DIR"/diffs/SoundCloud.java.diff .
+
+echo -n "= "
+patch src/main/java/de/voidplus/soundcloud/SoundCloud.java < SoundCloud.java.diff 
+echo -n "= "
+patch src/main/java/de/voidplus/soundcloud/Track.java < Track.java.diff 
+
 find src/main/java/ -name *.java > "$TMPFILE"
 echo "= compiling sources"
 $JAVAC \
